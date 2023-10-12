@@ -20,7 +20,10 @@ import com.example.gplx_b2.Modal.Question;
 import com.example.gplx_b2.myInterface.IClickAnswerItemListener;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
+import java.util.ListIterator;
 
 public class QuestionFragment extends Fragment {
     private static final String ARG_PARAM1 = "param1";
@@ -72,13 +75,13 @@ public class QuestionFragment extends Fragment {
         // Inflate the layout for this fragment
         layout = inflater.inflate(R.layout.fragment_question, container, false);
         InitUI(layout);
-        question = GetDataQuestion();
 
+        question = GetDataQuestion();
         if (question != null) {
             tvQuestion.setText(question.getQuestion());
 
             List<String> answerList = question.getAnswerList();
-//            RenderListAnswer(answerList);
+            RenderListAnswer(answerList);
         }
 
         return layout;
@@ -97,39 +100,38 @@ public class QuestionFragment extends Fragment {
         return question;
     }
 
-//    private void RenderListAnswer(List<String> list) {
-//        LinearLayoutManager linearLayoutManager = new LinearLayoutManager(context, RecyclerView.VERTICAL, false);
-//        answerRecyclerView.setLayoutManager(linearLayoutManager);
-//
-//        answerAdapter = new AnswerAdapter(context, StandardListAnswer(list), new IClickAnswerItemListener() {
-//            @Override
-//            public void onClickCheckBox(ArrayList<Integer> selectCheck, int adapterPosition) {
-//                for (int i = 0; i < selectCheck.size(); i++) {
-//                    if (i == adapterPosition) {
-//                        selectCheck.set(i, 1);
-//                    } else {
-//                        selectCheck.set(i, 0);
-//                    }
-//                }
-//            }
-//
-//            @Override
-//            public boolean onCheckedChange(String answer, boolean isChecked, int adapterPosition) {
-//                boolean isCorrect = false;
-////                if (isChecked) {
-////                    List<Question> questionList = GetListQuestion();
-////                    Question question = questionList.get(index);
-////                    String answerCorrect = question.getAnswerCorrect();
-////
-////                    if (answer.equals(answerCorrect))
-////                        isCorrect = true;
-////                }
-//
-//                return isCorrect;
-//            }
-//        });
-//        answerRecyclerView.setAdapter(answerAdapter);
-//    }
+    private void RenderListAnswer(List<String> list) {
+        LinearLayoutManager linearLayoutManager = new LinearLayoutManager(context, RecyclerView.VERTICAL, false);
+        answerRecyclerView.setLayoutManager(linearLayoutManager);
+
+        answerAdapter = new AnswerAdapter(context, StandardListAnswer(list), new IClickAnswerItemListener() {
+            @Override
+            public void onClickCheckBox(ArrayList<Integer> selectCheck, int adapterPosition) {
+                for (int i = 0; i < selectCheck.size(); i++) {
+                    if (i == adapterPosition) {
+                        selectCheck.set(i, 1);
+                    } else {
+                        selectCheck.set(i, 0);
+                    }
+                }
+            }
+
+            @Override
+            public boolean onCheckedChange(String answer, boolean isChecked, int adapterPosition) {
+                boolean isCorrect = false;
+                if (isChecked) {
+                    Question question = GetDataQuestion();
+                    String answerCorrect = question.getAnswerCorrect();
+
+                    if (answer.equals(answerCorrect))
+                        isCorrect = true;
+                }
+
+                return isCorrect;
+            }
+        });
+        answerRecyclerView.setAdapter(answerAdapter);
+    }
 
     private List<String> StandardListAnswer(List<String> list) {
         List<String> newAnswerList = new ArrayList<>();
@@ -138,6 +140,11 @@ public class QuestionFragment extends Fragment {
             if (answer != null)
                 newAnswerList.add(answer);
         }
+
+        //set height for recycler view without RecyclerView parent container height as wrap_content
+        LinearLayout.LayoutParams layoutParams = (LinearLayout.LayoutParams) answerRecyclerView.getLayoutParams();
+        layoutParams.height = newAnswerList.size() * 200;
+        answerRecyclerView.setLayoutParams(layoutParams);
 
         return newAnswerList;
     }

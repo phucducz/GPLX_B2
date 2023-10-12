@@ -2,6 +2,7 @@ package com.example.gplx_b2.Controller;
 
 import android.content.Context;
 import android.graphics.Color;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -23,16 +24,19 @@ public class AnswerAdapter extends RecyclerView.Adapter<AnswerAdapter.ViewHolder
     Context context;
     final private List<String> answerList;
     final private IClickAnswerItemListener iClickAnswerItemListener;
-    final private ArrayList<Integer> selectCheck = new ArrayList<Integer>();
+    final private ArrayList<Integer> selectCheck = new ArrayList<>();
     private boolean isCorrect = false;
+    private ArrayList<String> answerChooseList = new ArrayList<>();
 
     public AnswerAdapter(Context context, List<String> answerList, IClickAnswerItemListener listener) {
         this.context = context;
         this.answerList = answerList;
         this.iClickAnswerItemListener = listener;
 
-        for (int i = 0; i < answerList.size(); i++)
+        for (int i = 0; i < answerList.size(); i++) {
             selectCheck.add(0);
+            answerChooseList.add(null);
+        }
     }
 
     @NonNull
@@ -50,7 +54,7 @@ public class AnswerAdapter extends RecyclerView.Adapter<AnswerAdapter.ViewHolder
         if (answer == null || answer.isEmpty())
             return;
 
-        //is checked - Select only one checkbox
+        //is checked - Single selection
         if (selectCheck.get(position) == 1)
             holder.radioButton.setChecked(true);
             //unchecked
@@ -59,13 +63,18 @@ public class AnswerAdapter extends RecyclerView.Adapter<AnswerAdapter.ViewHolder
         holder.tvAnswerNumber.setText((position + 1) + " - ");
         holder.tvAnswer.setText(answer + ".");
 
+//        if (answerChooseList.get(position) != null) {
+//            enableDisableView(holder.lnLinearGroup, false);
+//            Log.d("Check", "in");
+//        }
+
         //events
         int adapterPosition = holder.getBindingAdapterPosition();
         holder.lnAnswerItem.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-
                 iClickAnswerItemListener.onClickCheckBox(selectCheck, adapterPosition);
+                answerChooseList.set(adapterPosition, answer);
                 notifyDataSetChanged();
             }
         });
@@ -95,11 +104,23 @@ public class AnswerAdapter extends RecyclerView.Adapter<AnswerAdapter.ViewHolder
         context = null;
     }
 
+    public static void enableDisableView(View view, boolean enabled) {
+        view.setEnabled(enabled);
+
+        if (view instanceof ViewGroup) {
+            ViewGroup group = (ViewGroup) view;
+
+            for (int idx = 0; idx < group.getChildCount(); idx++) {
+                enableDisableView(group.getChildAt(idx), enabled);
+            }
+        }
+    }
+
     public static class ViewHolder extends RecyclerView.ViewHolder {
         final private RadioButton radioButton;
         final private TextView tvAnswerNumber;
         final private TextView tvAnswer;
-        final private LinearLayout lnAnswerItem;
+        final private LinearLayout lnAnswerItem, lnLinearGroup;
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -108,6 +129,7 @@ public class AnswerAdapter extends RecyclerView.Adapter<AnswerAdapter.ViewHolder
             tvAnswerNumber = itemView.findViewById(R.id.txtAnswerNumber);
             tvAnswer = itemView.findViewById(R.id.txtAnswer);
             lnAnswerItem = itemView.findViewById(R.id.lnAnswerItem);
+            lnLinearGroup = itemView.findViewById(R.id.lnRecyclerGroup);
         }
     }
 }

@@ -1,10 +1,8 @@
 package com.example.gplx_b2;
 
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.fragment.app.FragmentStatePagerAdapter;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-import androidx.viewpager.widget.ViewPager;
 import androidx.viewpager2.widget.ViewPager2;
 
 import android.content.Context;
@@ -12,30 +10,32 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 
-import android.util.Log;
 import android.view.View;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
-import android.widget.Toast;
 
-import com.example.gplx_b2.Controller.AnswerAdapter;
+import com.example.gplx_b2.Controller.QuestionBottomSheetAdapter;
+import com.example.gplx_b2.Controller.TopicAdapter;
+import com.example.gplx_b2.Controller.ViewPagerAdapter;
 import com.example.gplx_b2.DAO.QuestionDAO;
 import com.example.gplx_b2.Modal.Question;
 import com.example.gplx_b2.Modal.Topic;
-import com.example.gplx_b2.myInterface.IClickAnswerItemListener;
+import com.example.gplx_b2.myInterface.IClickTopicItemListener;
+import com.google.android.material.bottomsheet.BottomSheetBehavior;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class QuestionActivity extends AppCompatActivity {
     Context context = this;
     QuestionDAO questionDAO;
     ImageView imgQuestionTopic;
-    TextView tvNumber;
+    TextView tvNumber, tvPrev, tvNext, tvShowAllQuestion, tvHideQuestionBottomSheet;
+    LinearLayout lnBottomSheet;
     ViewPager2 viewPager2;
-//    RecyclerView answerRecyclerView;
-//    private AnswerAdapter answerAdapter;
-//    private int index = 0;
+    BottomSheetBehavior bottomSheetBehavior;
+    RecyclerView questionBottomSheetRecyclerView;
+    QuestionBottomSheetAdapter questionBottomSheetAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -45,16 +45,89 @@ public class QuestionActivity extends AppCompatActivity {
         InitUI();
         Topic topic = GetData();
         RenderQuestionPager(topic);
-//        RenderQuestion(topic);
+
+        int length = GetListQuestion().size();
+        InitData(1, length);
+
+        viewPager2.registerOnPageChangeCallback(new ViewPager2.OnPageChangeCallback() {
+            @Override
+            public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
+                super.onPageScrolled(position, positionOffset, positionOffsetPixels);
+            }
+
+            @Override
+            public void onPageSelected(int position) {
+                super.onPageSelected(position);
+
+                if (position == 0) {
+                    tvPrev.setClickable(false);
+                } else if (position == length - 1) {
+                    tvNext.setClickable(false);
+                } else {
+                    tvNext.setClickable(true);
+                    tvPrev.setClickable(true);
+                }
+                InitData(position + 1, length);
+            }
+
+            @Override
+            public void onPageScrollStateChanged(int state) {
+                super.onPageScrollStateChanged(state);
+            }
+        });
+
+        tvPrev.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                viewPager2.setCurrentItem(viewPager2.getCurrentItem() - 1);
+            }
+        });
+
+        tvNext.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                viewPager2.setCurrentItem(viewPager2.getCurrentItem() + 1);
+            }
+        });
+
+        tvShowAllQuestion.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if(bottomSheetBehavior.getState() != BottomSheetBehavior.STATE_EXPANDED)
+                    bottomSheetBehavior.setState(BottomSheetBehavior.STATE_EXPANDED);
+            }
+        });
+
+        tvHideQuestionBottomSheet.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if(bottomSheetBehavior.getState() != BottomSheetBehavior.STATE_COLLAPSED)
+                    bottomSheetBehavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
+            }
+        });
+
+        RenderQuestionBottomSheet(topic);
     }
 
     private void InitUI() {
         imgQuestionTopic = findViewById(R.id.imgQuestionTopic);
 
         tvNumber = findViewById(R.id.txtNumber);
-//        tvQuestion= findViewById(R.id.txtQuestion);
-//        answerRecyclerView = findViewById(R.id.rcvAnswer);
+        tvPrev = findViewById(R.id.txtPrev);
+        tvNext = findViewById(R.id.txtNext);
+        tvShowAllQuestion = findViewById(R.id.txtShowAllQuestion);
+
+        tvHideQuestionBottomSheet = findViewById(R.id.txtHideQuestionBottomSheet);
+
         viewPager2 = findViewById(R.id.vpgQuestion);
+        lnBottomSheet = findViewById(R.id.bottom_sheet_layout);
+        questionBottomSheetRecyclerView = findViewById(R.id.rcvQuestionBottomSheet);
+
+        bottomSheetBehavior = BottomSheetBehavior.from(lnBottomSheet);
+    }
+
+    private void InitData(int currentQuestion, int length) {
+        tvNumber.setText("Câu " + currentQuestion + "/" + length);
     }
 
     private Topic GetData() {
@@ -80,108 +153,21 @@ public class QuestionActivity extends AppCompatActivity {
         imgQuestionTopic.setImageResource(imageResource);
 
         List<Question> questionList = GetListQuestion();
-//        ViewPagerAdapter viewPagerAdapter = new ViewPagerAdapter(getSupportFragmentManager(),
-//                FragmentStatePagerAdapter.BEHAVIOR_RESUME_ONLY_CURRENT_FRAGMENT, questionList);
         ViewPagerAdapter viewPagerAdapter = new ViewPagerAdapter(this, questionList);
         viewPager2.setAdapter(viewPagerAdapter);
     }
 
-//    private void RenderQuestion(Topic topic) {
-//        List<Question> questionList = GetListQuestion();
-//        Question question = questionList.get(index);
-//
-//        String name = topic.getImage();
-//        int imageResource = context.getResources().getIdentifier(name, "drawable", context.getPackageName());
-//
-//        imgQuestionTopic.setImageResource(imageResource);
-////        tvQuestion.setText(question.getQuestion());
-//
-//        List<String> answerList = question.getAnswerList();
-////        RenderListAnswer(answerList);
-//    }
+    private void RenderQuestionBottomSheet(Topic topic) {
+        LinearLayoutManager linearLayoutManager = new LinearLayoutManager(this, RecyclerView.VERTICAL, false);
+        questionBottomSheetRecyclerView.setLayoutManager(linearLayoutManager);
 
-//    private void RenderListAnswer(List<String> list) {
-//        LinearLayoutManager linearLayoutManager = new LinearLayoutManager(this, RecyclerView.VERTICAL, false);
-//        answerRecyclerView.setLayoutManager(linearLayoutManager);
-//
-//        answerAdapter = new AnswerAdapter(this, StandardListAnswer(list), new IClickAnswerItemListener() {
-//            @Override
-//            public void onClickCheckBox(ArrayList<Integer> selectCheck, int adapterPosition) {
-//                for (int i = 0; i < selectCheck.size(); i++) {
-//                    if (i == adapterPosition) {
-//                        selectCheck.set(i, 1);
-//                    } else {
-//                        selectCheck.set(i, 0);
-//                    }
-//                }
-//            }
-//
-//            @Override
-//            public boolean onCheckedChange(String answer, boolean isChecked, int adapterPosition) {
-//                boolean isCorrect = false;
-//                if (isChecked) {
-//                    List<Question> questionList = GetListQuestion();
-//                    Question question = questionList.get(index);
-//                    String answerCorrect = question.getAnswerCorrect();
-//
-//                    if (answer.equals(answerCorrect))
-//                        isCorrect = true;
-//                }
-//
-//                return isCorrect;
-//            }
-//        });
-//        answerRecyclerView.setAdapter(answerAdapter);
-//    }
-
-//    private List<String> StandardListAnswer(List<String> list) {
-//        List<String> newAnswerList = new ArrayList<>();
-//
-//        for (String answer : list)
-//            if (answer != null)
-//                newAnswerList.add(answer);
-//
-//        return newAnswerList;
-//    }
-
-//    private void ChangeQuestion(String type) {
-//        Topic topic = GetData();
-//        int length = GetListQuestion().size();
-//
-//        switch (type) {
-//            case "Previous":
-//                index -= 1;
-//
-//                if (index < 0)
-//                    index = 0;
-//                else {
-//                    RenderQuestion(topic);
-//                }
-//                break;
-//            case "Next":
-//                index += 1;
-//
-//                if (index == length)
-//                    index = length - 1;
-//                else {
-//                    RenderQuestion(topic);
-//                }
-//                break;
-//            default:
-//                RenderQuestion(topic);
-//        }
-//    }
-
-//    public void onClickPrev(View view) {
-//        ChangeQuestion("Previous");
-//    }
-//
-//    public void onClickNext(View view) {
-//        ChangeQuestion("Next");
-//    }
+        List<Question> questionList = GetListQuestion();
+        questionBottomSheetAdapter = new QuestionBottomSheetAdapter(context, questionList, topic);
+        questionBottomSheetRecyclerView.setAdapter(questionBottomSheetAdapter);
+    }
 
     public void onClickBackToMain(View view) {
-        Intent intent = new Intent(this, MainActivity.class);
+        Intent intent = new Intent(context, MainActivity.class);
         startActivity(intent);
     }
 }

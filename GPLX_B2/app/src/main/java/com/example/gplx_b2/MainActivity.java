@@ -9,7 +9,6 @@ import com.example.gplx_b2.Modal.Topic;
 import com.example.gplx_b2.Controller.TopicAdapter;
 import com.example.gplx_b2.myInterface.IClickTopicItemListener;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import androidx.appcompat.app.AppCompatActivity;
